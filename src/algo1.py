@@ -1,5 +1,6 @@
 import pygame
 import sys
+import math
 
 # Initialize Pygame
 pygame.init()
@@ -27,9 +28,14 @@ drone_positions = []
 # List to store the past positions (blue markers)
 past_positions = []
 
+# List to store the saved points (grey circles)
+saved_points = []
+
 # Color and radius for the past positions
 past_position_color = (0, 0, 255)  # Blue color for the past positions
 past_position_radius = 1  # Radius for the past positions
+grey_circle_color = (128, 128, 128)  # Grey color for saved points
+grey_circle_radius = drone_radius
 
 def is_white(pixel):
     return pixel[:3] == (255, 255, 255)
@@ -63,6 +69,8 @@ if drone_position is None:
 
 # Record the initial position
 drone_positions.append(tuple(drone_position))
+past_positions.append(tuple(drone_position))
+saved_points.append(tuple(drone_position))
 
 def move_drone(position, direction):
     new_position = position[:]
@@ -95,11 +103,19 @@ def move_drone(position, direction):
             break
 
     if area_is_white:
-        drone_positions.append(tuple(new_position))
         past_positions.append(tuple(new_position))
         return new_position
     else:
         return position
+
+def distance(point1, point2):
+    return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
+
+def is_far_enough_from_all_points(point, points, min_distance):
+    for p in points:
+        if distance(point, p) < min_distance:
+            return False
+    return True
 
 # Main loop
 running = True
@@ -126,14 +142,23 @@ while running:
 
     # Draw the past positions (blue markers)
     for pos in past_positions:
+        pygame.draw.circle(window, drone_color, pos, drone_radius)
         pygame.draw.circle(window, past_position_color, pos, past_position_radius)
 
-    # Draw the drone positions (yellow markers)
-    for pos in drone_positions:
-        pygame.draw.circle(window, drone_color, pos, drone_radius)
+    # Check distance and update the saved points list if necessary
+    if is_far_enough_from_all_points(drone_position, saved_points, 200):
+        saved_points.append(tuple(drone_position))
 
-    # Draw the current drone
+    # Draw the saved points (grey circles)
+    for pos in saved_points:
+        pygame.draw.circle(window, grey_circle_color, pos, grey_circle_radius)
+
+    # Draw the current drone (yellow circle only)
     pygame.draw.circle(window, drone_color, drone_position, drone_radius)
+
+    # Draw the path (blue points inside yellow circles)
+    for pos in past_positions:
+        pygame.draw.circle(window, past_position_color, pos, past_position_radius)
 
     # Update the display
     pygame.display.flip()
