@@ -1,107 +1,52 @@
-from PIL import Image
-import numpy as np
-import matplotlib.pyplot as plt
-import Point
-import Lidar
-import CPU
-import Tools
-import WorldParams
+import math
 
+max=100
 class Drone:
-    def __init__(self, real_map):
-        self.gyro_rotation = 0.0
-        self.sensor_optical_flow = Point(0, 0)
-        self.point_from_start = Point(0, 0)
-        self.start_point = real_map.drone_start_point
-        self.lidars = []
-        self.drone_img_path = "D:/Tests/drone_3_pixels.png"
-        self.real_map = real_map
-        self.rotation = 0.0
-        self.speed = 0.2
-        self.cpu = CPU(100, "Drone")
+    def __init__(self, x, y, max_speed, acceleration, angular_speed, max_angle, flight_time):
+        self.x = x
+        self.y = y
+        self.max_speed = max_speed
+        self.acceleration = acceleration
+        self.angular_speed = angular_speed
+        self.max_angle = max_angle
+        self.flight_time = flight_time
+        self.pitch = 0
+        self.roll = 0
+        self.yaw = 0
+        self.speed_x = 0
+        self.speed_y = 0
+        self.altitude = 0
+        self.battery_status = flight_time
 
-    def play(self):
-        self.cpu.play()
+    def update_position(self):
+        self.x += self.speed_x
+        self.y += self.speed_y
 
-    def stop(self):
-        self.cpu.stop()
+    def update_speed(self):
+        self.speed_y = self._calculate_speed(self.pitch, self.speed_y)
+        self.speed_x = self._calculate_speed(self.roll, self.speed_x)
 
-    def add_lidar(self, degrees):
-        lidar = Lidar(self, degrees)
-        self.lidars.append(lidar)
-        self.cpu.add_function(lidar.get_simulation_distance)
+    def _calculate_speed(self, angle, speed):
+        return min(self.max_speed, speed + self.acceleration * 0.1 * math.sin(math.radians(angle))) if angle != 0 else speed
 
-    def get_point_on_map(self):
-        x = self.start_point.x + self.point_from_start.x
-        y = self.start_point.y + self.point_from_start.y
-        return Point(x, y)
+    def set_orientation(self, pitch=None, roll=None, yaw=None):
+        self.pitch = pitch if pitch is not None else self.pitch
+        self.roll = roll if roll is not None else self.roll
+        self.yaw = yaw if yaw is not None else self.yaw
 
-    def update(self, delta_time):
-        distanced_moved = (self.speed * 100) * (delta_time / 1000.0)
-        self.point_from_start = Tools.get_point_by_distance(self.point_from_start, self.rotation, distanced_moved)
-        
-        noise_to_distance = Tools.noise_between(WorldParams.min_motion_accuracy, WorldParams.max_motion_accuracy, False)
-        self.sensor_optical_flow = Tools.get_point_by_distance(self.sensor_optical_flow, self.rotation, distanced_moved * noise_to_distance)
-        
-        noise_to_rotation = Tools.noise_between(WorldParams.min_rotation_accuracy, WorldParams.max_rotation_accuracy, False)
-        milli_per_minute = 60000
-        self.gyro_rotation += (1 - noise_to_rotation) * delta_time / milli_per_minute
-        self.gyro_rotation = self.format_rotation(self.gyro_rotation)
+    def adjust_altitude(self, change):
+        self.altitude = max(0, self.altitude + change)
 
-    def format_rotation(self, rotation):
-        while rotation < 0:
-            rotation += 360
-        while rotation >= 360:
-            rotation -= 360
-        return rotation
+    def is_battery_depleted(self):
+        return self.battery_status <= 0
 
-    def get_optical_sensor_location(self):
-        return Point(self.sensor_optical_flow)
+    def reduce_battery(self, amount):
+        self.battery_status = max(0, self.battery_status - amount)
 
-    def rotate_left(self, delta_time):
-        rotation_changed = WorldParams.rotation_per_second * delta_time / 1000.0
-        self.rotation += rotation_changed
-        self.rotation = self.format_rotation(self.rotation)
-        
-        self.gyro_rotation += rotation_changed
-        self.gyro_rotation = self.format_rotation(self.gyro_rotation)
-
-    def rotate_right(self, delta_time):
-        rotation_changed = -WorldParams.rotation_per_second * delta_time / 1000.0
-        self.rotation += rotation_changed
-        self.rotation = self.format_rotation(self.rotation)
-        
-        self.gyro_rotation += rotation_changed
-        self.gyro_rotation = self.format_rotation(self.gyro_rotation)
-
-    def speed_up(self, delta_time):
-        self.speed += WorldParams.accelerate_per_second * delta_time / 1000.0
-        if self.speed > WorldParams.max_speed:
-            self.speed = WorldParams.max_speed
-
-    def slow_down(self, delta_time):
-        self.speed -= WorldParams.accelerate_per_second * delta_time / 1000.0
-        if self.speed < 0:
-            self.speed = 0
-
-    def paint(self):
-        if not hasattr(self, 'm_image'):
-            try:
-                self.m_image = Image.open(self.drone_img_path)
-            except Exception as ex:
-                print(ex)
-        
-        plt.imshow(self.m_image)
-        plt.show()
-        
-        for lidar in self.lidars:
-            lidar.paint()
-
-    def get_info_html(self):
-        info = "<html>"
-        info += f"Rotation: {self.rotation:.4f}<br>"
-        info += f"Location: {self.point_from_start}<br>"
-        info += f"gyroRotation: {self.gyro_rotation:.4f}<br>"
-        info += f"sensorOpticalFlow: {self.sensor_optical_flow}<br>"
-        info += "</html>"
-        return info
+    def reset_drone(self, x, y):
+        self.x = x
+        self.y = y
+        self.pitch = self.roll = self.yaw = 0
+        self.speed_x = self.speed_y = 0
+        self.altitude = 0
+        self.battery_status = self.flight_time

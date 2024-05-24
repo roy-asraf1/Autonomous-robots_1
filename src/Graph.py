@@ -1,53 +1,37 @@
-import networkx as nx
-import matplotlib.pyplot as plt
-import Point
+import pygame
 
 class Graph:
-    def __init__(self):
-        self.g = nx.DiGraph()
+    @staticmethod
+    def draw_drone(screen, drone):
+        pygame.draw.circle(screen, (0, 255, 0), [int(drone.x), int(drone.y)], 5)
 
-    def add_vertex(self, name):
-        last_vertex = None
-        all_vertices = list(self.g.nodes)
+    @staticmethod
+    def draw_buttons(screen, game_running, start_button_rect, stop_button_rect):
+        start_color = (0, 255, 0) if game_running else (255, 255, 255)
+        stop_color = (255, 0, 0) if not game_running else (255, 255, 255)
         
-        if len(all_vertices) > 0:
-            last_vertex = all_vertices[-1]
-        self.g.add_node(name)
-        if last_vertex is not None:
-            self.g.add_edge(last_vertex, name)
+        pygame.draw.rect(screen, start_color, start_button_rect)
+        pygame.draw.rect(screen, stop_color, stop_button_rect)
+        
+        font = pygame.font.Font(None, 36)
+        Graph._draw_text(screen, 'Start', start_button_rect, font)
+        Graph._draw_text(screen, 'Stop', stop_button_rect, font)
 
-    def get_last_element(self, c):
-        if len(c) > 0:
-            return list(c)[-1]
-        return None
+    @staticmethod
+    def _draw_text(screen, text, rect, font):
+        text_surface = font.render(text, True, (0, 0, 0))
+        screen.blit(text_surface, (rect.x + 20, rect.y + 10))
 
-    def add_edge(self, v1, v2):
-        self.g.add_edge(v1, v2)
+    @staticmethod
+    def draw_path(screen, path, color, radius):
+        for position in path:
+            pygame.draw.circle(screen, color, position, radius)
 
-    def get_graph(self):
-        return self.g
+    @staticmethod
+    def draw_map(screen, map_image):
+        screen.blit(map_image, map_image.get_rect())
 
-    def get_output(self):
-        return str(self.g.edges)
-
-    def draw_graph(self):
-        plt.figure(figsize=(10, 10))
-        pos = nx.spring_layout(self.g)
-        nx.draw(self.g, pos, with_labels=True, node_size=5000, node_color="skyblue", font_size=20, font_color="black")
-        plt.title("Graph Viewer")
-        plt.show()
-
-    def get_spanning_tree(self):
-        mst = nx.minimum_spanning_tree(self.g.to_undirected())
-        print(mst.edges)
-
-# Usage example:
-if __name__ == "__main__":
-    graph = Graph()
-    p1 = Point(1, 2)  # Assuming Point class is defined somewhere
-    p2 = Point(3, 4)
-    graph.add_vertex(p1)
-    graph.add_vertex(p2)
-    graph.add_edge(p1, p2)
-    graph.draw_graph()
-    graph.get_spanning_tree()
+    @staticmethod
+    def draw_saved_points(screen, saved_points, color, radius):
+        for point in saved_points:
+            pygame.draw.circle(screen, color, point, radius)
