@@ -5,6 +5,7 @@ class Drone:
     def __init__(self, x, y, max_speed, acceleration, angular_speed, max_angle, flight_time):
         self.x = x
         self.y = y
+        self.z = 0
         self.max_speed = max_speed
         self.acceleration = acceleration
         self.angular_speed = angular_speed
@@ -15,6 +16,7 @@ class Drone:
         self.yaw = 0
         self.speed_x = 0
         self.speed_y = 0
+        self.speed_z = 0
         self.altitude = 0
         self.battery_status = flight_time
 
@@ -50,3 +52,20 @@ class Drone:
         self.speed_x = self.speed_y = 0
         self.altitude = 0
         self.battery_status = self.flight_time
+        
+    def update_speed(self, speed_x, speed_y, speed_z):
+        self.speed_x = speed_x
+        self.speed_y = speed_y
+        self.speed_z = speed_z
+        
+        
+    def move(self):
+        self.x += self.speed_x
+        self.y += self.speed_y
+        self.z += self.speed_z
+        
+    def get_position(self):
+        return self.x, self.y, self.z
+
+    def check_battery(self):
+        return self.battery_status

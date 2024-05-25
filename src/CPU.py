@@ -5,8 +5,6 @@ from smartAlgo import SmartAlgo
 import numpy as np
 
 
-
-
 class CPU:
     def __init__(self, map_obj):
         self.drone = SmartDrone(start_x=50, start_y=50)  # Starting position
@@ -48,7 +46,7 @@ class CPU:
 
     def calculate_distance(self, direction):
         x, y = direction
-        if 0 <= x < self.map.width and 0 <= y < self.map.height:
+        if 0 <= x < self.map.screen_width and 0 <= y < self.map.screen_height:
             if self.map.is_walkable(x, y):
                 return np.linalg.norm([self.drone.x - x, self.drone.y - y])
             else:
@@ -56,11 +54,9 @@ class CPU:
         return self.lidar.max_range
 
     def run(self):
-        while self.drone.check_battery() > 0:
-            self.gather_sensor_data()
-            self.algo.run()
-            time.sleep(0.1)  # Simulate 10Hz update rate
-            print(f"Drone position: {self.drone.get_position()}, Battery: {self.drone.check_battery()}")
+        self.gather_sensor_data()
+        self.algo.run()
+        print(f"Drone position: {self.drone.get_position()}, Battery: {self.drone.check_battery()}")
 
 # Example usage
 if __name__ == "__main__":
@@ -68,3 +64,4 @@ if __name__ == "__main__":
     map_obj = Map("Maps/p12.png", 1000, 800)  # Load the map
     cpu = CPU(map_obj)
     cpu.run()
+

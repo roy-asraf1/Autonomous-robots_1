@@ -1,4 +1,3 @@
-import numpy as np
 from Drone import Drone
 
 class SmartDrone(Drone):
@@ -6,6 +5,8 @@ class SmartDrone(Drone):
         super().__init__(start_x, start_y, max_speed, 0.2, 100, 10, start_battery)
         self.home_x = start_x
         self.home_y = start_y
+        self.z = 10  # Start at a height of 10 units
+        self.speed_z = 0
 
     def return_to_home(self):
         self.speed_x = (self.home_x - self.x) / max(abs(self.home_x - self.x), 1)

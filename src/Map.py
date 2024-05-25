@@ -6,7 +6,6 @@ class Map:
         self.map_image = pygame.transform.scale(self.map_image, (screen_width, screen_height))
         self.screen_width = screen_width
         self.screen_height = screen_height
-        
 
     def is_walkable(self, x, y):
         if not self._is_within_bounds(x, y):
