@@ -1,71 +1,77 @@
-import math
+import Point
+import Tools
+import WorldParams
+import Lidar
+import CPU
 
-max=100
 class Drone:
-    def __init__(self, x, y, max_speed, acceleration, angular_speed, max_angle, flight_time):
-        self.x = x
-        self.y = y
-        self.z = 0
-        self.max_speed = max_speed
-        self.acceleration = acceleration
-        self.angular_speed = angular_speed
-        self.max_angle = max_angle
-        self.flight_time = flight_time
-        self.pitch = 0
-        self.roll = 0
-        self.yaw = 0
-        self.speed_x = 0
-        self.speed_y = 0
-        self.speed_z = 0
-        self.altitude = 0
-        self.battery_status = flight_time
+    def __init__(self, realMap):
+        self.realMap = realMap
+        self.startPoint = realMap.drone_start_point
+        self.pointFromStart = Point()
+        self.sensorOpticalFlow = Point()
+        self.lidars = []
+        self.speed = 0.2
+        self.rotation = 0
+        self.gyroRotation = self.rotation
+        self.cpu = CPU(100, "Drone")
 
-    def update_position(self):
-        self.x += self.speed_x
-        self.y += self.speed_y
+    def play(self):
+        self.cpu.play()
 
-    def update_speed(self):
-        self.speed_y = self._calculate_speed(self.pitch, self.speed_y)
-        self.speed_x = self._calculate_speed(self.roll, self.speed_x)
+    def stop(self):
+        self.cpu.stop()
 
-    def _calculate_speed(self, angle, speed):
-        return min(self.max_speed, speed + self.acceleration * 0.1 * math.sin(math.radians(angle))) if angle != 0 else speed
+    def addLidar(self, degrees):
+        lidar = Lidar(self, degrees)
+        self.lidars.append(lidar)
+        self.cpu.addFunction(lidar.getSimulationDistance)
 
-    def set_orientation(self, pitch=None, roll=None, yaw=None):
-        self.pitch = pitch if pitch is not None else self.pitch
-        self.roll = roll if roll is not None else self.roll
-        self.yaw = yaw if yaw is not None else self.yaw
+    def getPointOnMap(self):
+        x = self.startPoint.x + self.pointFromStart.x
+        y = self.startPoint.y + self.pointFromStart.y
+        return Point(x, y)
 
-    def adjust_altitude(self, change):
-        self.altitude = max(0, self.altitude + change)
+    def update(self, deltaTime):
+        distancedMoved = (self.speed * 100) * (deltaTime / 1000)
+        self.pointFromStart = Tools.getPointByDistance(self.pointFromStart, self.rotation, distancedMoved)
+        noiseToDistance = Tools.noiseBetween(WorldParams.min_motion_accuracy, WorldParams.max_motion_accuracy, False)
+        self.sensorOpticalFlow = Tools.getPointByDistance(self.sensorOpticalFlow, self.rotation, distancedMoved * noiseToDistance)
+        noiseToRotation = Tools.noiseBetween(WorldParams.min_rotation_accuracy, WorldParams.max_rotation_accuracy, False)
+        milli_per_minute = 60000
+        self.gyroRotation += (1 - noiseToRotation) * (deltaTime / milli_per_minute)
+        self.gyroRotation = self.formatRotation(self.gyroRotation)
 
-    def is_battery_depleted(self):
-        return self.battery_status <= 0
+    def rotateLeft(self, deltaTime):
+        rotationChanged = WorldParams.rotation_per_second * deltaTime / 1000
+        self.rotation += rotationChanged
+        self.rotation = self.formatRotation(self.rotation)
+        self.gyroRotation += rotationChanged
+        self.gyroRotation = self.formatRotation(self.gyroRotation)
 
-    def reduce_battery(self, amount):
-        self.battery_status = max(0, self.battery_status - amount)
+    def rotateRight(self, deltaTime):
+        rotationChanged = -WorldParams.rotation_per_second * deltaTime / 1000
+        self.rotation += rotationChanged
+        self.rotation = self.formatRotation(self.rotation)
+        self.gyroRotation += rotationChanged
+        self.gyroRotation = self.formatRotation(self.gyroRotation)
 
-    def reset_drone(self, x, y):
-        self.x = x
-        self.y = y
-        self.pitch = self.roll = self.yaw = 0
-        self.speed_x = self.speed_y = 0
-        self.altitude = 0
-        self.battery_status = self.flight_time
-        
-    def update_speed(self, speed_x, speed_y, speed_z):
-        self.speed_x = speed_x
-        self.speed_y = speed_y
-        self.speed_z = speed_z
-        
-        
-    def move(self):
-        self.x += self.speed_x
-        self.y += self.speed_y
-        self.z += self.speed_z
-        
-    def get_position(self):
-        return self.x, self.y, self.z
+    def speedUp(self, deltaTime):
+        self.speed += (WorldParams.accelerate_per_second * deltaTime / 1000)
+        if self.speed > WorldParams.max_speed:
+            self.speed = WorldParams.max_speed
 
-    def check_battery(self):
-        return self.battery_status
+    def slowDown(self, deltaTime):
+        self.speed -= (WorldParams.accelerate_per_second * deltaTime / 1000)
+        if self.speed < 0:
+            self.speed = 0
+
+    def formatRotation(self, rotation):
+        while rotation >= 360:
+            rotation -= 360
+        while rotation < 0:
+            rotation += 360
+        return rotation
+
+    def getOpticalSensorLocation(self):
+        return Point(self.sensorOpticalFlow)

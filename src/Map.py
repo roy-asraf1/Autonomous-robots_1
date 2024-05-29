@@ -1,43 +1,55 @@
+from PIL import Image
 import pygame
+import Point
+import Drone
 
 class Map:
-    def __init__(self, map_image_path, screen_width, screen_height):
-        self.map_image = pygame.image.load(map_image_path)
-        self.map_image = pygame.transform.scale(self.map_image, (screen_width, screen_height))
-        self.screen_width = screen_width
-        self.screen_height = screen_height
+    def __init__(self, path, drone_start_point):
+        self.drone_start_point = drone_start_point
+        try:
+            img_map = Image.open(path)
+            self.map = self.render_map_from_image_to_boolean(img_map)
+        except IOError as e:
+            print(e)
 
-    def is_walkable(self, x, y):
-        if not self._is_within_bounds(x, y):
-            return False
-        return self._is_white_pixel(x, y)
 
-    def _is_within_bounds(self, x, y):
-        return 0 <= x < self.screen_width and 0 <= y < self.screen_height
+    def render_map_from_image_to_boolean(self, map_img):
+        w, h = map_img.size
+        map_array = [[False for _ in range(h)] for _ in range(w)]
+        pixels = map_img.load()
+        for y in range(h):
+            for x in range(w):
+                r, g, b = pixels[x, y][:3]
+                if r != 0 and g != 0 and b != 0:  # think black
+                    map_array[x][y] = True
+        return map_array
 
-    def _is_white_pixel(self, x, y):
-        pixel_color = self.map_image.get_at((int(x), int(y)))
-        return pixel_color == (255, 255, 255, 255)  # Check for white color
+    def is_collide(self, x, y):
+        return not self.map[x][y]
 
-    def get_pixel_color(self, x, y):
-        if self._is_within_bounds(x, y):
-            return self.map_image.get_at((int(x), int(y)))
-        return None
+    def paint(self, screen):
+        gray_color = (128, 128, 128)
+        for i in range(len(self.map)):
+            for j in range(len(self.map[0])):
+                if not self.map[i][j]:
+                    screen.set_at((i, j), gray_color)
 
-    def find_nearest_walkable(self, start_x, start_y):
-        # Example of a naive search algorithm to find the nearest walkable position
-        for radius in range(1, max(self.screen_width, self.screen_height)):
-            for dx in range(-radius, radius + 1):
-                for dy in range(-radius, radius + 1):
-                    new_x, new_y = start_x + dx, start_y + dy
-                    if self.is_walkable(new_x, new_y):
-                        return new_x, new_y
-        return start_x, start_y
+# Example usage with Pygame
+if __name__ == "__main__":
+    pygame.init()
+    screen = pygame.display.set_mode((800, 600))
+    map_image_path = 'path/to/your/map_image.png'
+    drone_start_point = Point.Point(0, 0)
+    game_map = Map(map_image_path, drone_start_point)
 
-    def count_walkable_pixels(self):
-        count = 0
-        for y in range(self.screen_height):
-            for x in range(self.screen_width):
-                if self.is_walkable(x, y):
-                    count += 1
-        return count
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+        
+        screen.fill((255, 255, 255))
+        game_map.paint(screen)
+        pygame.display.flip()
+    
+    pygame.quit()

@@ -1,37 +1,33 @@
 import pygame
+import sys
 
 class Graph:
-    @staticmethod
-    def draw_drone(screen, drone):
-        pygame.draw.circle(screen, (0, 255, 0), [int(drone.x), int(drone.y)], 5)
+    def __init__(self):
+        self.g = {}
+        self.vertices = []
 
-    @staticmethod
-    def draw_buttons(screen, game_running, start_button_rect, stop_button_rect):
-        start_color = (0, 255, 0) if game_running else (255, 255, 255)
-        stop_color = (255, 0, 0) if not game_running else (255, 255, 255)
-        
-        pygame.draw.rect(screen, start_color, start_button_rect)
-        pygame.draw.rect(screen, stop_color, stop_button_rect)
-        
-        font = pygame.font.Font(None, 36)
-        Graph._draw_text(screen, 'Start', start_button_rect, font)
-        Graph._draw_text(screen, 'Stop', stop_button_rect, font)
+    def add_vertex(self, name):
+        if name not in self.g:
+            self.g[name] = []
+            self.vertices.append(name)
+            if len(self.vertices) > 1:
+                last_vertex = self.vertices[-2]
+                self.add_edge(last_vertex, name)
 
-    @staticmethod
-    def _draw_text(screen, text, rect, font):
-        text_surface = font.render(text, True, (0, 0, 0))
-        screen.blit(text_surface, (rect.x + 20, rect.y + 10))
+    def add_edge(self, v1, v2):
+        if v1 in self.g:
+            self.g[v1].append(v2)
+        if v2 not in self.g:
+            self.g[v2] = []
 
-    @staticmethod
-    def draw_path(screen, path, color, radius):
-        for position in path:
-            pygame.draw.circle(screen, color, position, radius)
+    def get_graph(self):
+        return self.g
 
-    @staticmethod
-    def draw_map(screen, map_image):
-        screen.blit(map_image, map_image.get_rect())
-
-    @staticmethod
-    def draw_saved_points(screen, saved_points, color, radius):
-        for point in saved_points:
-            pygame.draw.circle(screen, color, point, radius)
+    def draw_graph(self, screen, positions):
+        # Draw each vertex
+        for vertex in positions:
+            pygame.draw.circle(screen, (0, 255, 0), positions[vertex], 5)
+            if vertex in self.g:
+                for neighbor in self.g[vertex]:
+                    if neighbor in positions:
+                        pygame.draw.line(screen, (255, 0, 0), positions[vertex], positions[neighbor], 2)

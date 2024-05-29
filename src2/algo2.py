@@ -6,13 +6,13 @@ import math
 pygame.init()
 
 # Load the map image
-map_image = pygame.image.load('p11.png')
+map_image = pygame.image.load('Maps/p12.png')
 
 # Get dimensions of the map
 map_width, map_height = map_image.get_size()
 
 # Set up the display
-window_size = (map_width + 400, map_height)  # Add extra width for the buttons and input fields
+window_size = (map_width + 400, map_height - 100)  # Add extra width for the buttons and input fields
 window = pygame.display.set_mode(window_size)
 pygame.display.set_caption("2D Drone Simulator")
 

@@ -1,67 +1,80 @@
-import time
-from smartDrone import SmartDrone
-from Lidar import Lidar
-from smartAlgo import SmartAlgo
-import numpy as np
 
+import threading
+import time
+from collections import deque
 
 class CPU:
-    def __init__(self, map_obj):
-        self.drone = SmartDrone(start_x=50, start_y=50)  # Starting position
-        self.lidar = Lidar()
-        self.map = map_obj
-        self.sensor_data = []
-        self.algo = SmartAlgo(map_obj, self.drone)
+    all_cpus = []
 
-    def gather_sensor_data(self):
-        # Simulate gathering data from sensors
-        distances = [self.lidar.measure(dist) for dist in self.get_distances()]
-        yaw = self.drone.yaw
-        speed_x = self.drone.speed_x
-        speed_y = self.drone.speed_y
-        z = self.drone.z
-        baro = self.drone.z
-        bat = self.drone.check_battery()
-        pitch = self.drone.pitch
-        roll = self.drone.roll
-        accX = self.drone.speed_x
-        accY = self.drone.speed_y
-        accZ = self.drone.speed_z
-        self.sensor_data = [distances, yaw, speed_x, speed_y, z, baro, bat, pitch, roll, accX, accY, accZ]
+    def __init__(self, hz, name):
+        self.functions_list = deque()
+        self.isPlay = False
+        self.isPlayedBeforeStop = False
+        self.hz = hz
+        self.elapsedMilli = 0
+        self.thread = threading.Thread(target=self.thread_run, name="Eventor_" + name)
+        self.thread.start()
+        if not CPU.all_cpus:
+            CPU.all_cpus = []
+        CPU.all_cpus.append(self)
 
-    def get_distances(self):
-        # Simulate distances from lidar in six directions
-        directions = [
-            (self.drone.x, self.drone.y - 1),  # forward
-            (self.drone.x, self.drone.y + 1),  # backward
-            (self.drone.x + 1, self.drone.y),  # right
-            (self.drone.x - 1, self.drone.y),  # left
-            (self.drone.x, self.drone.y)  # up/down (2D, so just return current position)
-        ]
-        distances = []
-        for direction in directions:
-            distance = self.calculate_distance(direction)
-            distances.append(distance)
-        return distances
+    @staticmethod
+    def stopAllCPUS():
+        for cpu in CPU.all_cpus:
+            cpu.isPlay = False
 
-    def calculate_distance(self, direction):
-        x, y = direction
-        if 0 <= x < self.map.screen_width and 0 <= y < self.map.screen_height:
-            if self.map.is_walkable(x, y):
-                return np.linalg.norm([self.drone.x - x, self.drone.y - y])
-            else:
-                return self.lidar.max_range
-        return self.lidar.max_range
+    @staticmethod
+    def resumeAllCPUS():
+        for cpu in CPU.all_cpus:
+            cpu.resume()
 
-    def run(self):
-        self.gather_sensor_data()
-        self.algo.run()
-        print(f"Drone position: {self.drone.get_position()}, Battery: {self.drone.check_battery()}")
+    def resume(self):
+        if self.isPlayedBeforeStop:
+            self.isPlay = True
+            with self.thread:
+                self.thread.notify()
 
-# Example usage
-if __name__ == "__main__":
-    from Map import Map
-    map_obj = Map("Maps/p12.png", 1000, 800)  # Load the map
-    cpu = CPU(map_obj)
-    cpu.run()
+    def addFunction(self, func):
+        self.functions_list.append(func)
 
+    def play(self):
+        self.isPlay = True
+        self.isPlayedBeforeStop = True
+        self.resume()
+
+    def stop(self):
+        self.isPlay = False
+        self.isPlayedBeforeStop = False
+
+    def getElapsedMilli(self):
+        return self.elapsedMilli
+
+    def resetClock(self):
+        self.elapsedMilli = 0
+
+    def thread_run(self):
+        time.sleep(0.01)  # Sleep for 10 ms (0.01 seconds)
+        
+        functions_size = 0
+        last_sample_times = None
+        i = 0
+        while True:
+            if functions_size != len(self.functions_list):
+                functions_size = len(self.functions_list)
+                last_sample_times = [0] * functions_size
+            if functions_size == 0:
+                continue
+            last_sample = time.time()
+            time.sleep(max(0, 1 / self.hz))
+            with threading.Lock():
+                while not self.isPlay:
+                    threading.Condition().wait()
+                    last_sample = time.time()
+            diff = int((time.time() - last_sample) * 1000)
+            before_index = (i - 1) % functions_size
+            actual_diff = last_sample_times[before_index] + diff - last_sample_times[i]
+            last_sample_times[i] = last_sample_times[before_index] + diff
+            curr_func = self.functions_list[i]
+            curr_func(actual_diff)
+            self.elapsedMilli += actual_diff
+            i = (i + 1) % functions_size
