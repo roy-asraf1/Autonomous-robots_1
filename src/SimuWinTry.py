@@ -20,10 +20,14 @@ class Button:
         text_surface = self.font.render(self.text, True, (0, 0, 0))
         screen.blit(text_surface, (self.rect.x + 5, self.rect.y + 10))
 
+    def handle_event(self, event):
+        if event.type == MOUSEBUTTONDOWN and self.rect.collidepoint(event.pos):
+            self.callback()
+
 class SimulationWindow:
     def __init__(self, map_image):
         pygame.init()
-        self.screen = pygame.display.set_mode((500, 400))
+        self.screen = pygame.display.set_mode((1800, 700), pygame.RESIZABLE)
         pygame.display.set_caption('Drone Simulator')
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont(None, 36)
@@ -39,9 +43,10 @@ class SimulationWindow:
 
     def create_buttons(self):
         self.buttons = [
-            Button(1300, 0, 170, 50, 'Start/Pause', self.toggle_start_pause),
+            Button(1600, 0, 170, 50, 'Start/Pause', self.toggle_start_pause),
+            
             # Button(1300, 100, 100, 50, 'speedUp', self.algo1.speed_up),
-            # Button(1400, 100, 100, 50, 'speedDown', self.algo1.speed_down),
+            # Button(1400, 100, 50, 50, 'speedDown', self.algo1.speed_down),
             # Add more buttons here...
         ]
 
@@ -58,10 +63,8 @@ class SimulationWindow:
                 if event.type == QUIT:
                     pygame.quit()
                     sys.exit()
-                elif event.type == MOUSEBUTTONDOWN:
-                    for button in self.buttons:
-                        if button.rect.collidepoint(event.pos):
-                            button.callback()
+                for button in self.buttons:
+                    button.handle_event(event)
 
             self.screen.blit(self.map_image, (0, 0))
             for button in self.buttons:
@@ -71,5 +74,5 @@ class SimulationWindow:
             self.clock.tick(60)
 
 if __name__ == '__main__':
-    app = SimulationWindow('../Maps/p12.png')
+    app = SimulationWindow('Maps/p12.png')
     app.run()
