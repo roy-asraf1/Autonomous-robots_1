@@ -6,11 +6,13 @@ from WorldParams import WorldParams
 from Tools import Tools
 from Point import Point
 
+
 class PixelState(Enum):
     BLOCKED = 1
     EXPLORED = 2
     UNEXPLORED = 3
     VISITED = 4
+
 
 class AutoAlgo1:
     def __init__(self, real_map):
@@ -66,9 +68,9 @@ class AutoAlgo1:
         self.update_visited()
         self.update_map_by_lidars()
         if self.toggle_ai:
-            self.ai(delta_time)
+            self.ai()
         if self.toggle_center_ai:
-            self.center_ai(delta_time)
+            self.center_ai()
         self.drone.update(delta_time)  # Update the drone's position
         self.drone_path.append(self.drone.get_point_on_map())  # Store the current position
         if self.is_rotating:
@@ -111,7 +113,7 @@ class AutoAlgo1:
             if state == PixelState.VISITED or self.map[xi][yi] == PixelState.UNEXPLORED:
                 self.map[xi][yi] = state
 
-    def ai(self, delta_time):
+    def ai(self):
         if self.is_init:
             self.speed_up()
             drone_point = self.drone.get_optical_sensor_location()
@@ -148,8 +150,10 @@ class AutoAlgo1:
 
                 if a > 270 and b > 270:
                     self.is_lidars_max = True
-                    l1 = Tools.get_point_by_distance(drone_point, lidar1.degrees + self.drone.gyro_rotation, lidar1.current_distance)
-                    l2 = Tools.get_point_by_distance(drone_point, lidar2.degrees + self.drone.gyro_rotation, lidar2.current_distance)
+                    l1 = Tools.get_point_by_distance(drone_point, lidar1.degrees + self.drone.gyro_rotation,
+                                                     lidar1.current_distance)
+                    l2 = Tools.get_point_by_distance(drone_point, lidar2.degrees + self.drone.gyro_rotation,
+                                                     lidar2.current_distance)
                     last_point = self.get_avg_last_point()
                     dis_to_lidar1 = Tools.get_distance_between_points(last_point, l1)
                     dis_to_lidar2 = Tools.get_distance_between_points(last_point, l2)
@@ -163,7 +167,7 @@ class AutoAlgo1:
 
                 self.spin_by(spin_by, True, self.escape_risk)
 
-    def center_ai(self, delta_time):
+    def center_ai(self):
         # Center AI logic
         if not self.is_risky:
             lidar_left = self.drone.lidars[1]
