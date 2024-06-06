@@ -9,8 +9,9 @@ from Map import Map
 from Painter import Painter
 from WorldParams import WorldParams
 
-
 map_path = "../Maps/p12.png"
+
+
 # map_path = "../Maps/pure_white.png"
 
 def show_loading_screen(display):
@@ -20,11 +21,13 @@ def show_loading_screen(display):
     display.blit(text, text_rect)
     pygame.display.flip()
 
+
 def is_walkable(self, x, y, map_image):
     if x < 0 or x >= self.screen_width or y < 0 or y >= self.screen_height:
         return False
     pixel_color = map_image.get_at((int(x), int(y)))
     return pixel_color == pygame.Color(255, 255, 255, 255)  # Check for white color
+
 
 def is_safe_position(self, x, y, map_image):
     safe_dis = WorldParams.SAFE_DISTANCE
@@ -33,6 +36,7 @@ def is_safe_position(self, x, y, map_image):
             if not is_walkable(self, x + dx, y + dy, map_image):
                 return False
     return True
+
 
 def find_fixed_walkable_position(self, image_path):
     # Load the image
@@ -48,6 +52,7 @@ def find_fixed_walkable_position(self, image_path):
             if is_walkable(self, x, y, image) and is_safe_position(self, x, y, image):
                 return Point(x, y)
     return Point(0, 0)  # Default position if no walkable area is found
+
 
 class SimulationWindow:
     def __init__(self):
@@ -73,7 +78,6 @@ class SimulationWindow:
         self.init_ui()
         self.algo1.play()
 
-
     def init_ui(self):
         # Define buttons within the 25% right part of the screen
         buttons_area_start = self.screen_width * 0.75
@@ -89,18 +93,35 @@ class SimulationWindow:
 
         # Buttons configuration
         self.buttons = {
-            'Start/Stop': (pygame.Rect(first_column_x, starting_y, button_width, button_height), self.handle_start_stop),
+            'Start/Stop': (
+            pygame.Rect(first_column_x, starting_y, button_width, button_height), self.handle_start_stop),
             'Speed Up': (pygame.Rect(second_column_x, starting_y, button_width, button_height), self.handle_speed_up),
-            'Slow Down': (pygame.Rect(first_column_x, starting_y + y_increment, button_width, button_height), self.handle_slow_down),
-            'Spin 180': (pygame.Rect(second_column_x, starting_y + y_increment, button_width, button_height), lambda: self.handle_spin(180)),
-            'Spin 90': (pygame.Rect(first_column_x, starting_y + 2 * y_increment, button_width, button_height), lambda: self.handle_spin(90)),
-            'Spin 60': (pygame.Rect(second_column_x, starting_y + 2 * y_increment, button_width, button_height), lambda: self.handle_spin(60)),
-            'Spin 45': (pygame.Rect(first_column_x, starting_y + 3 * y_increment, button_width, button_height), lambda: self.handle_spin(45)),
-            'Spin 30': (pygame.Rect(second_column_x, starting_y + 3 * y_increment, button_width, button_height), lambda: self.handle_spin(30)),
-            'Spin -30': (pygame.Rect(first_column_x, starting_y + 4 * y_increment, button_width, button_height), lambda: self.handle_spin(-30)),
-            'Spin -45': (pygame.Rect(second_column_x, starting_y + 4 * y_increment, button_width, button_height), lambda: self.handle_spin(-45)),
-            'Toggle AI': (pygame.Rect(first_column_x, starting_y + 5 * y_increment, button_width, button_height), self.handle_toggle_ai),
-            'Return Home': (pygame.Rect(second_column_x, starting_y + 5 * y_increment, button_width, button_height), self.handle_return_home),
+            'Slow Down': (
+            pygame.Rect(first_column_x, starting_y + y_increment, button_width, button_height), self.handle_slow_down),
+            'Spin 180': (pygame.Rect(second_column_x, starting_y + y_increment, button_width, button_height),
+                         lambda: self.handle_spin(180)),
+            'Spin 90': (pygame.Rect(first_column_x, starting_y + 2 * y_increment, button_width, button_height),
+                        lambda: self.handle_spin(90)),
+            'Spin 60': (pygame.Rect(second_column_x, starting_y + 2 * y_increment, button_width, button_height),
+                        lambda: self.handle_spin(60)),
+            'Spin 45': (pygame.Rect(first_column_x, starting_y + 3 * y_increment, button_width, button_height),
+                        lambda: self.handle_spin(45)),
+            'Spin 30': (pygame.Rect(second_column_x, starting_y + 3 * y_increment, button_width, button_height),
+                        lambda: self.handle_spin(30)),
+            'Spin -30': (pygame.Rect(first_column_x, starting_y + 4 * y_increment, button_width, button_height),
+                         lambda: self.handle_spin(-30)),
+            'Spin -45': (pygame.Rect(second_column_x, starting_y + 4 * y_increment, button_width, button_height),
+                         lambda: self.handle_spin(-45)),
+            'Spin -60': (pygame.Rect(first_column_x, starting_y + 5 * y_increment, button_width, button_height),
+                         lambda: self.handle_spin(-60)),
+            'Spin -90': (pygame.Rect(second_column_x, starting_y + 5 * y_increment, button_width, button_height),
+                         lambda: self.handle_spin(-90)),
+            'Spin -180': (pygame.Rect(first_column_x, starting_y + 6 * y_increment, button_width, button_height),
+                          lambda: self.handle_spin(-180)),
+            'Toggle AI': (pygame.Rect(second_column_x, starting_y + 6 * y_increment, button_width, button_height),
+                          self.handle_toggle_ai),
+            'Return Home': (pygame.Rect(first_column_x, starting_y + 7 * y_increment, button_width, button_height),
+                            self.handle_return_home),
         }
         self.font = pygame.font.Font(None, 22)  # Smaller font size for smaller buttons
 
@@ -158,6 +179,7 @@ class SimulationWindow:
 
     def handle_return_home(self):
         self.algo1.return_home = not self.algo1.return_home
+
 
 if __name__ == "__main__":
     app = SimulationWindow()
