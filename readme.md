@@ -2,6 +2,13 @@
 
 This project simulates an autonomous drone navigating a map using LIDAR sensors and AI algorithms. The drone can either explore the map or stay centered on the path using two AI algorithms: the default AI and the center AI.
 
+### Explanation of the project
+In this project we convert a java project of Simulation Drone to python.
+The project is about a drone that navigates through a map using LIDAR sensors.
+The project includes two AI algorithms for drone navigation: Default AI and Center AI.
+In the project we have buttons to control the drone, such as start/stop, speed up/slow down, rotate in angles, toggle AI, and toggle AI center.
+The return home function is not implemented in the project - only needed in the future expanded project.
+
 ## Table of Contents
 
 - [Introduction](#introduction)
@@ -52,7 +59,7 @@ The Autonomous Drone Simulator is a Python-based project that models a drone nav
 4. **Run the simulation:**
 
     ```bash
-    python main.py
+    python SimulationWindow.py
     ```
 
 ## Usage
@@ -121,6 +128,13 @@ Contributions are welcome! If you would like to contribute, please fork the repo
     ```
 
 5. **Open a pull request**
+
+## Sources
+- The project is based on the [Autonomous Drone Simulator](https://github.com/vection/DroneSimulator)
+- The task of the project is from the course "Autonomous Robots" [The Task](https://docs.google.com/document/d/1eo34T_M7jfduRZm_oevy94YY2LkGLzRT/edit?usp=sharing&ouid=113711744349547563645&rtpof=true&sd=true)
+
+## Contributors
+Elor Israeli, Naor Ladani, Roy Asraf
 
 ## License
 
