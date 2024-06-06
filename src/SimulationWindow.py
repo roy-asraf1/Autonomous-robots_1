@@ -7,15 +7,47 @@ from CPU import CPU
 from Point import Point
 from Map import Map
 from Painter import Painter
+from WorldParams import WorldParams
 
+
+map_path = "../Maps/p12.png"
+# map_path = "../Maps/pure_white.png"
 
 def show_loading_screen(display):
     font = pygame.font.Font(None, 36)
     text = font.render('Loading...', True, (255, 255, 255))
-    text_rect = text.get_rect(center=(display.get_width()//2, display.get_height()//2))
+    text_rect = text.get_rect(center=(display.get_width() // 2, display.get_height() // 2))
     display.blit(text, text_rect)
     pygame.display.flip()
 
+def is_walkable(self, x, y, map_image):
+    if x < 0 or x >= self.screen_width or y < 0 or y >= self.screen_height:
+        return False
+    pixel_color = map_image.get_at((int(x), int(y)))
+    return pixel_color == pygame.Color(255, 255, 255, 255)  # Check for white color
+
+def is_safe_position(self, x, y, map_image):
+    safe_dis = WorldParams.SAFE_DISTANCE
+    for dx in range(-safe_dis, safe_dis + 1):
+        for dy in range(-safe_dis, safe_dis + 1):
+            if not is_walkable(self, x + dx, y + dy, map_image):
+                return False
+    return True
+
+def find_fixed_walkable_position(self, image_path):
+    # Load the image
+    try:
+        image = pygame.image.load(image_path)
+        image_width, image_height = image.get_size()
+    except pygame.error as e:
+        print(f"Failed to load the image: {e}")
+        return None
+
+    for y in range(image_height):
+        for x in range(image_width):
+            if is_walkable(self, x, y, image) and is_safe_position(self, x, y, image):
+                return Point(x, y)
+    return Point(0, 0)  # Default position if no walkable area is found
 
 class SimulationWindow:
     def __init__(self):
@@ -28,16 +60,19 @@ class SimulationWindow:
         # Show loading screen
         show_loading_screen(self.frame)
 
+        start_position = find_fixed_walkable_position(self, map_path)
         # Initialize game components here after resources are loaded
-        self.map = Map("../Maps/p12.png", Point(100, 50))
+        self.map = Map(map_path, start_position)
         self.algo1 = AutoAlgo1(self.map)
         self.painter = Painter(self.algo1)
         self.running = True
-        self.toggle_stop = True
+        self.toggle_start = True
         self.toggle_real_map = True
         self.toggle_ai = False
         self.return_home = False
         self.init_ui()
+        self.algo1.play()
+
 
     def init_ui(self):
         # Define buttons within the 25% right part of the screen
@@ -54,7 +89,7 @@ class SimulationWindow:
 
         # Buttons configuration
         self.buttons = {
-            'Stop/Resume': (pygame.Rect(first_column_x, starting_y, button_width, button_height), self.handle_stop_resume),
+            'Start/Stop': (pygame.Rect(first_column_x, starting_y, button_width, button_height), self.handle_start_stop),
             'Speed Up': (pygame.Rect(second_column_x, starting_y, button_width, button_height), self.handle_speed_up),
             'Slow Down': (pygame.Rect(first_column_x, starting_y + y_increment, button_width, button_height), self.handle_slow_down),
             'Spin 180': (pygame.Rect(second_column_x, starting_y + y_increment, button_width, button_height), lambda: self.handle_spin(180)),
@@ -93,15 +128,18 @@ class SimulationWindow:
                 pygame.draw.rect(self.frame, (200, 200, 200), rect)
                 self.frame.blit(self.font.render(text, True, (0, 0, 0)), (rect.x + 5, rect.y + 10))
 
+            # Draw the drone
+            self.algo1.paint(self.frame)
+
             pygame.display.flip()
             time.sleep(0.016)  # Maintain frame rate
 
-    def handle_stop_resume(self):
-        self.toggle_stop = not self.toggle_stop
-        if self.toggle_stop:
+    def handle_start_stop(self):
+        if self.toggle_start:
             CPU.resume_all_cpus()
         else:
             CPU.stop_all_cpus()
+        self.toggle_start = not self.toggle_start
 
     def handle_speed_up(self):
         self.algo1.speed_up()

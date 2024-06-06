@@ -1,14 +1,19 @@
 import random
+
+import pygame
+
 from WorldParams import WorldParams
 from Tools import Tools
 import Drone
 from Point import Point
 
+
 class Lidar:
-    def __init__(self, drone: Drone, degrees: float):
+    def __init__(self, drone: 'Drone', degrees: float):
         self.drone = drone
         self.degrees = degrees
         self.current_distance = 0
+        self.local_counter = 0
 
     def get_distance(self, delta_time):
         actual_point_to_shoot = self.drone.get_point_on_map()
@@ -29,3 +34,10 @@ class Lidar:
             distance_in_cm += random.randint(-WorldParams.lidar_noise, WorldParams.lidar_noise)
         self.current_distance = distance_in_cm
         return distance_in_cm
+
+    def paint(self, surface, drone_rotation):
+        self.local_counter += 1
+        start_point = self.drone.get_point_on_map()
+        end_angle = drone_rotation + self.degrees
+        end_point = Tools.get_point_by_distance(start_point, end_angle, self.current_distance)
+        pygame.draw.line(surface, (0, 255, 0), (int(start_point.x), int(start_point.y)), (int(end_point.x), int(end_point.y)))

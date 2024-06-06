@@ -1,8 +1,11 @@
+import pygame
+
 from Point import Point
 from WorldParams import WorldParams
 from Tools import Tools
 from Lidar import Lidar
 from CPU import CPU
+
 
 class Drone:
     def __init__(self, real_map):
@@ -26,6 +29,9 @@ class Drone:
         lidar = Lidar(self, degrees)
         self.lidars.append(lidar)
         self.cpu.add_function(lidar.get_simulation_distance)
+
+    def get_optical_sensor_location(self):
+        return self.point_from_start
 
     def get_point_on_map(self):
         x = self.start_point.x + self.point_from_start.x
@@ -51,13 +57,13 @@ class Drone:
 
     def rotate_left(self, delta_time):
         rotation_changed = WorldParams.rotation_per_second * delta_time / 1000
-        self.rotation += rotation_destroyed(self.rotation)
-        self.gyro_rotation += rotation_destroyed(self.gyro_rotation)
+        self.rotation += rotation_changed
+        self.gyro_rotation += rotation_changed
 
     def rotate_right(self, delta_time):
         rotation_changed = -WorldParams.rotation_per_second * delta_time / 1000
-        self.rotation += rotation_destroyed(self.rotation)
-        self.gyro_rotation += rotation_destroyed(self.gyro_rotation)
+        self.rotation += rotation_changed
+        self.gyro_rotation += rotation_changed
 
     def speed_up(self, delta_time):
         self.speed += (WorldParams.accelerate_per_second * delta_time / 1000)
@@ -65,7 +71,7 @@ class Drone:
             self.speed = WorldParams.max_speed
 
     def slow_down(self, delta_time):
-        self.speed -= (WorldPhase.accelerate_per_second * delta_time / 1000)
+        self.speed -= (WorldParams.accelerate_per_second * delta_time / 1000)
         if self.speed < 0:
             self.speed = 0
 
@@ -74,3 +80,10 @@ class Drone:
                f"Location: {self.point_from_start}<br>" \
                f"Gyro Rotation: {self.gyro_rotation:.4f}<br>" \
                f"Sensor Optical Flow: {self.sensor_optical_flow}"
+
+    def paint(self, surface):
+        # Draw the drone as a red circle
+        pygame.draw.circle(surface, (255, 0, 0), (int(self.get_point_on_map().x), int(self.get_point_on_map().y)), 5)
+        # Draw each Lidar line
+        for lidar in self.lidars:
+            lidar.paint(surface, self.rotation)

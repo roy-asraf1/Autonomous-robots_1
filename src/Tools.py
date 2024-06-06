@@ -5,7 +5,7 @@ from WorldParams import WorldParams
 
 class Tools:
     @staticmethod
-    def getPointByDistance(fromPoint, rotation, distance):
+    def get_point_by_distance(fromPoint, rotation, distance):
         radians = math.pi * (rotation / 180)
         i = distance / WorldParams.CMPerPixel
         xi = fromPoint.x + math.cos(radians) * i
@@ -13,7 +13,7 @@ class Tools:
         return Point(xi, yi)
 
     @staticmethod
-    def noiseBetween(min, max, isNegative):
+    def noise_between(min, max, isNegative):
         noise = (min + random.random() * (max - min)) / 100
         if not isNegative:
             return 1 + noise
