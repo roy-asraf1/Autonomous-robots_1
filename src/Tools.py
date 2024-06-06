@@ -1,39 +1,29 @@
-
 import math
 import random
-import WorldParams
-import Point
+from Point import Point
+from WorldParams import WorldParams
 
 class Tools:
     @staticmethod
-    def get_point_by_distance(from_point, rotation, distance):
+    def getPointByDistance(fromPoint, rotation, distance):
         radians = math.pi * (rotation / 180)
-        i = distance / WorldParams.CM_PER_PIXEL
-        xi = from_point.x + math.cos(radians) * i
-        yi = from_point.y + math.sin(radians) * i
+        i = distance / WorldParams.CMPerPixel
+        xi = fromPoint.x + math.cos(radians) * i
+        yi = fromPoint.y + math.sin(radians) * i
         return Point(xi, yi)
 
     @staticmethod
-    def noise_between(min, max, is_negative):
-        noise_to_distance = 1
+    def noiseBetween(min, max, isNegative):
         noise = (min + random.random() * (max - min)) / 100
-        if not is_negative:
-            return noise_to_distance + noise
-        if random.choice([True, False]):
-            return noise_to_distance + noise
+        if not isNegative:
+            return 1 + noise
+        if random.random() > 0.5:
+            return 1 + noise
         else:
-            return noise_to_distance - noise
+            return 1 - noise
 
     @staticmethod
-    def get_rotation_between_points(from_point, to_point):
-        y1 = from_point.y - to_point.y
-        x1 = from_point.x - to_point.x
-        radians = math.atan2(y1, x1)
-        rotation = radians * 180 / math.pi
-        return rotation
-
-    @staticmethod
-    def get_distance_between_points(from_point, to_point):
-        x1 = (from_point.x - to_point.x) ** 2
-        y1 = (from_point.y - to_point.y) ** 2
+    def getDistanceBetweenPoints(fromPoint, toPoint):
+        x1 = (fromPoint.x - toPoint.x)**2
+        y1 = (fromPoint.y - toPoint.y)**2
         return math.sqrt(x1 + y1)

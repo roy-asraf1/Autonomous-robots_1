@@ -1,143 +1,127 @@
 import pygame
 import sys
-from pygame.locals import *
-from threading import Thread
 import time
+from pygame.locals import *
+from AutoAlgo1 import AutoAlgo1
 from CPU import CPU
-from Button import  Button
-from Drone import  Drone
-from AutoAlgo1_full import AutoAlgo1
+from Point import Point
+from Map import Map
+from Painter import Painter
+
+
+def show_loading_screen(display):
+    font = pygame.font.Font(None, 36)
+    text = font.render('Loading...', True, (255, 255, 255))
+    text_rect = text.get_rect(center=(display.get_width()//2, display.get_height()//2))
+    display.blit(text, text_rect)
+    pygame.display.flip()
+
 
 class SimulationWindow:
-    def __init__(self, image_path=None):
+    def __init__(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((400, 300))
-        pygame.display.set_caption('Drone Simulator')
-        self.clock = pygame.time.Clock()
-        self.font = pygame.font.SysFont(None, 36)
-        self.info_label = ""
-        self.info_label2 = ""
+        info = pygame.display.Info()
+        self.screen_width, self.screen_height = info.current_w - 100, info.current_h - 100
+        self.frame = pygame.display.set_mode((self.screen_width, self.screen_height), RESIZABLE)
+        pygame.display.set_caption("Drone Simulator")
+
+        # Show loading screen
+        show_loading_screen(self.frame)
+
+        # Initialize game components here after resources are loaded
+        self.map = Map("../Maps/p12.png", Point(100, 50))
+        self.algo1 = AutoAlgo1(self.map)
+        self.painter = Painter(self.algo1)
+        self.running = True
+        self.toggle_stop = True
+        self.toggle_real_map = True
+        self.toggle_ai = False
         self.return_home = False
-        self.toogleStop = True
-        self.toogleRealMap = True
-        self.toogleAI = False
-        # self.algo1 = AutoAlgo1()
+        self.init_ui()
 
-        self.create_buttons()
+    def init_ui(self):
+        # Define buttons within the 25% right part of the screen
+        buttons_area_start = self.screen_width * 0.75
+        button_width = 100  # Smaller width
+        button_height = 40  # Smaller height
+        button_spacing = 10  # Spacing between buttons
+        first_column_x = buttons_area_start + 20  # X position for the first column
+        second_column_x = first_column_x + button_width + button_spacing  # X position for the second column
 
-        self.painter_thread = Thread(target=self.run_painter)
-        self.painter_thread.start()
+        # Y starting position for the buttons
+        starting_y = 20
+        y_increment = button_height + 10  # Space between buttons vertically
 
-        self.updates_thread = Thread(target=self.run_updates)
-        self.updates_thread.start()
+        # Buttons configuration
+        self.buttons = {
+            'Stop/Resume': (pygame.Rect(first_column_x, starting_y, button_width, button_height), self.handle_stop_resume),
+            'Speed Up': (pygame.Rect(second_column_x, starting_y, button_width, button_height), self.handle_speed_up),
+            'Slow Down': (pygame.Rect(first_column_x, starting_y + y_increment, button_width, button_height), self.handle_slow_down),
+            'Spin 180': (pygame.Rect(second_column_x, starting_y + y_increment, button_width, button_height), lambda: self.handle_spin(180)),
+            'Spin 90': (pygame.Rect(first_column_x, starting_y + 2 * y_increment, button_width, button_height), lambda: self.handle_spin(90)),
+            'Spin 60': (pygame.Rect(second_column_x, starting_y + 2 * y_increment, button_width, button_height), lambda: self.handle_spin(60)),
+            'Spin 45': (pygame.Rect(first_column_x, starting_y + 3 * y_increment, button_width, button_height), lambda: self.handle_spin(45)),
+            'Spin 30': (pygame.Rect(second_column_x, starting_y + 3 * y_increment, button_width, button_height), lambda: self.handle_spin(30)),
+            'Spin -30': (pygame.Rect(first_column_x, starting_y + 4 * y_increment, button_width, button_height), lambda: self.handle_spin(-30)),
+            'Spin -45': (pygame.Rect(second_column_x, starting_y + 4 * y_increment, button_width, button_height), lambda: self.handle_spin(-45)),
+            'Toggle AI': (pygame.Rect(first_column_x, starting_y + 5 * y_increment, button_width, button_height), self.handle_toggle_ai),
+            'Return Home': (pygame.Rect(second_column_x, starting_y + 5 * y_increment, button_width, button_height), self.handle_return_home),
+        }
+        self.font = pygame.font.Font(None, 22)  # Smaller font size for smaller buttons
 
-        self.info_thread = Thread(target=self.run_info)
-        self.info_thread.start()
+    def main_loop(self):
+        while self.running:
+            self.frame.fill((0, 0, 0))  # Clear the screen with black before drawing
+            self.map.paint(self.frame)  # Draw the map on 75% of the screen
 
-    def create_buttons(self):
-        self.buttons = []
-
-        # self.buttons.append(Button(1300, 0, 170, 50, 'Start/Pause', self.toggle_start_pause))
-        # self.buttons.append(Button(1300, 100, 100, 50, 'speedUp', self.algo1.speed_up))
-        # self.buttons.append(Button(1400, 100, 100, 50, 'speedDown', self.algo1.speed_down))
-        # self.buttons.append(Button(1300, 200, 100, 50, 'spin180', lambda: self.algo1.spin_by(180)))
-        # self.buttons.append(Button(1400, 200, 100, 50, 'spin90', lambda: self.algo1.spin_by(90)))
-        # self.buttons.append(Button(1500, 200, 100, 50, 'spin60', lambda: self.algo1.spin_by(60)))
-        # self.buttons.append(Button(1300, 300, 100, 50, 'spin45', lambda: self.algo1.spin_by(45)))
-        # self.buttons.append(Button(1400, 300, 100, 50, 'spin30', lambda: self.algo1.spin_by(30)))
-        # self.buttons.append(Button(1500, 300, 100, 50, 'spin-30', lambda: self.algo1.spin_by(-30)))
-        # self.buttons.append(Button(1600, 300, 100, 50, 'spin-45', lambda: self.algo1.spin_by(-45)))
-        # self.buttons.append(Button(1700, 300, 100, 50, 'spin-60', lambda: self.algo1.spin_by(-60)))
-        # self.buttons.append(Button(1300, 400, 120, 50, 'toggle Map', self.toggle_map))
-        # self.buttons.append(Button(1400, 400, 120, 50, 'toggle AI', self.toggle_ai))
-        # self.buttons.append(Button(1500, 400, 120, 50, 'Return Home', self.return_home_func))
-        # self.buttons.append(Button(1600, 400, 120, 50, 'Open Graph', self.open_graph))
-
-    def toggle_start_pause(self):
-        self.toogleStop = not self.toogleStop
-        if self.toogleStop:
-            CPU.stopAllCPUS()
-        else:
-            CPU.resumeAllCPUS()
-
-    def toggle_map(self):
-        self.toogleRealMap = not self.toogleRealMap
-
-    def toggle_ai(self):
-        self.toogleAI = not self.toogleAI
-
-    def return_home_func(self):
-        self.return_home = not self.return_home
-        self.algo1.speed_down()
-        self.algo1.spin_by(180, True, self.algo1.speed_up)
-
-    def open_graph(self):
-        self.algo1.m_graph.draw_graph()
-
-    def run_painter(self):
-        while True:
-            self.screen.fill((255, 255, 255))
-            for button in self.buttons:
-                button.draw(self.screen)
-
-            # Call the painter function to draw other components if needed
-            self.algo1.paint(self.screen)
-
-            pygame.display.flip()
-            self.clock.tick(60)
-
-    def run_updates(self):
-        while True:
-            self.algo1.drone.update()
-            time.sleep(1 / 60)
-
-    def run_info(self):
-        while True:
-            self.update_info()
-            time.sleep(1 / 6)
-
-    def update_info(self):
-        self.info_label = self.algo1.drone.get_info_html()
-        self.info_label2 = f"Counter: {self.algo1.counter}\nIs Risky: {self.algo1.is_risky}\nRisky Distance: {self.algo1.risky_dis}"
-
-    def run(self):
-        while True:
+            # Handle events and draw buttons
             for event in pygame.event.get():
                 if event.type == QUIT:
                     pygame.quit()
                     sys.exit()
+                elif event.type == VIDEORESIZE:
+                    self.screen_width, self.screen_height = event.w, event.h
+                    self.frame = pygame.display.set_mode((self.screen_width, self.screen_height), RESIZABLE)
+                    self.init_ui()
                 elif event.type == MOUSEBUTTONDOWN:
-                    for button in self.buttons:
-                        if button.rect.collidepoint(event.pos):
-                            button.callback()
+                    for button_text, (rect, action) in self.buttons.items():
+                        if rect.collidepoint(event.pos):
+                            action()
 
-            self.screen.fill((255, 255, 255))
-            for button in self.buttons:
-                button.draw(self.screen)
-
-            info_surface = self.font.render(self.info_label, True, (0, 0, 0))
-            self.screen.blit(info_surface, (1300, 500))
-
-            info_surface2 = self.font.render(self.info_label2, True, (0, 0, 0))
-            self.screen.blit(info_surface2, (1300, 550))
+            # Draw buttons with text
+            for text, (rect, _) in self.buttons.items():
+                pygame.draw.rect(self.frame, (200, 200, 200), rect)
+                self.frame.blit(self.font.render(text, True, (0, 0, 0)), (rect.x + 5, rect.y + 10))
 
             pygame.display.flip()
-            self.clock.tick(60)
+            time.sleep(0.016)  # Maintain frame rate
 
+    def handle_stop_resume(self):
+        self.toggle_stop = not self.toggle_stop
+        if self.toggle_stop:
+            CPU.resume_all_cpus()
+        else:
+            CPU.stop_all_cpus()
 
-    def toggle_cpu(self):
-        CPU.toggle_all_cpus()
+    def handle_speed_up(self):
+        self.algo1.speed_up()
 
-    def speed_up(self):
-        self.algo.speed_up()
+    def handle_slow_down(self):
+        self.algo1.speed_down()
 
-    def speed_down(self):
-        self.algo.speed_down()
+    def handle_spin(self, degrees):
+        self.algo1.spin_by(degrees)
 
-if __name__ == '__main__':
-    input = input('What is the map?\n') # ../Maps/p12.png
-    # algo = AutoAlgo1()  # Assuming AutoAlgo1 is properly defined elsewhere
-    app = SimulationWindow(input)
-    # Load the map image
-    map_image = pygame.image.load(app)
-    app.run()
+    def handle_toggle_map(self):
+        self.toggle_real_map = not self.toggle_real_map
+
+    def handle_toggle_ai(self):
+        self.toggle_ai = not self.toggle_ai
+
+    def handle_return_home(self):
+        self.return_home = not self.return_home
+        self.algo1.return_home()
+
+if __name__ == "__main__":
+    app = SimulationWindow()
+    app.main_loop()

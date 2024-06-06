@@ -1,37 +1,31 @@
-
 import random
-import WorldParams
-import Tools
+from WorldParams import WorldParams
+from Tools import Tools
+import Drone
+from Point import Point
 
 class Lidar:
-    def __init__(self, drone, degrees):
+    def __init__(self, drone: Drone, degrees: float):
         self.drone = drone
         self.degrees = degrees
         self.current_distance = 0
 
-    def get_distance(self, deltaTime):
-        actual_point_to_shoot = self.drone.getPointOnMap()
-        rotation = self.drone.getRotation() + self.degrees
+    def get_distance(self, delta_time):
+        actual_point_to_shoot = self.drone.get_point_on_map()
+        rotation = self.drone.rotation + self.degrees
         distance_in_cm = 1
         while distance_in_cm <= WorldParams.lidar_limit:
-            p = Tools.getPointByDistance(actual_point_to_shoot, rotation, distance_in_cm)
-            if self.drone.realMap.is_collide(int(p.x), int(p.y)):
+            point = Tools.get_point_by_distance(actual_point_to_shoot, rotation, distance_in_cm)
+            if self.drone.real_map.is_collide(int(point.x), int(point.y)):
                 break
             distance_in_cm += 1
         return distance_in_cm
 
-    def get_simulation_distance(self, deltaTime):
-        ran = random.random()
-        if ran <= 0.05:  # 5% of the time, not getting an answer
+    def get_simulation_distance(self, delta_time):
+        if random.random() <= 0.05:
             distance_in_cm = 0
         else:
-            distance_in_cm = self.get_distance(deltaTime)
+            distance_in_cm = self.get_distance(delta_time)
             distance_in_cm += random.randint(-WorldParams.lidar_noise, WorldParams.lidar_noise)
         self.current_distance = distance_in_cm
         return distance_in_cm
-
-    def paint(self, g):
-        actual_point_to_shoot = self.drone.getPointOnMap()
-        from_rotation = self.drone.getRotation() + self.degrees
-        to = Tools.getPointByDistance(actual_point_to_shoot, from_rotation, self.current_distance)
-        g.draw_line(int(actual_point_to_shoot.x), int(actual_point_to_shoot.y), int(to.x), int(to.y))
