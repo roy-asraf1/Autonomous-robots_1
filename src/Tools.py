@@ -23,7 +23,7 @@ class Tools:
             return 1 - noise
 
     @staticmethod
-    def getDistanceBetweenPoints(fromPoint, toPoint):
+    def get_distance_between_points(fromPoint, toPoint):
         x1 = (fromPoint.x - toPoint.x)**2
         y1 = (fromPoint.y - toPoint.y)**2
         return math.sqrt(x1 + y1)

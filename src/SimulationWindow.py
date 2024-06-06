@@ -51,9 +51,9 @@ def find_fixed_walkable_position(self, image_path):
 
 class SimulationWindow:
     def __init__(self):
+        self.screen_width = 1800
+        self.screen_height = 700
         pygame.init()
-        info = pygame.display.Info()
-        self.screen_width, self.screen_height = info.current_w - 100, info.current_h - 100
         self.frame = pygame.display.set_mode((self.screen_width, self.screen_height), RESIZABLE)
         pygame.display.set_caption("Drone Simulator")
 
@@ -154,11 +154,10 @@ class SimulationWindow:
         self.toggle_real_map = not self.toggle_real_map
 
     def handle_toggle_ai(self):
-        self.toggle_ai = not self.toggle_ai
+        self.algo1.toggle_ai = not self.algo1.toggle_ai
 
     def handle_return_home(self):
-        self.return_home = not self.return_home
-        self.algo1.return_home()
+        self.algo1.return_home = not self.algo1.return_home
 
 if __name__ == "__main__":
     app = SimulationWindow()
