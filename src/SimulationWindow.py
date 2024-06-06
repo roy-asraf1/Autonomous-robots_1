@@ -74,7 +74,6 @@ class SimulationWindow:
         self.toggle_start = True
         self.toggle_real_map = True
         self.toggle_ai = False
-        self.return_home = False
         self.init_ui()
         self.algo1.play()
 
@@ -94,10 +93,11 @@ class SimulationWindow:
         # Buttons configuration
         self.buttons = {
             'Start/Stop': (
-            pygame.Rect(first_column_x, starting_y, button_width, button_height), self.handle_start_stop),
+                pygame.Rect(first_column_x, starting_y, button_width, button_height), self.handle_start_stop),
             'Speed Up': (pygame.Rect(second_column_x, starting_y, button_width, button_height), self.handle_speed_up),
             'Slow Down': (
-            pygame.Rect(first_column_x, starting_y + y_increment, button_width, button_height), self.handle_slow_down),
+                pygame.Rect(first_column_x, starting_y + y_increment, button_width, button_height),
+                self.handle_slow_down),
             'Spin 180': (pygame.Rect(second_column_x, starting_y + y_increment, button_width, button_height),
                          lambda: self.handle_spin(180)),
             'Spin 90': (pygame.Rect(first_column_x, starting_y + 2 * y_increment, button_width, button_height),
@@ -120,8 +120,8 @@ class SimulationWindow:
                           lambda: self.handle_spin(-180)),
             'Toggle AI': (pygame.Rect(second_column_x, starting_y + 6 * y_increment, button_width, button_height),
                           self.handle_toggle_ai),
-            'Return Home': (pygame.Rect(first_column_x, starting_y + 7 * y_increment, button_width, button_height),
-                            self.handle_return_home),
+            'Toggle Center AI': (pygame.Rect(second_column_x, starting_y + 7 * y_increment, button_width, button_height),
+                          self.handle_toggle_center_ai),
         }
         self.font = pygame.font.Font(None, 22)  # Smaller font size for smaller buttons
 
@@ -177,9 +177,8 @@ class SimulationWindow:
     def handle_toggle_ai(self):
         self.algo1.toggle_ai = not self.algo1.toggle_ai
 
-    def handle_return_home(self):
-        self.algo1.return_home = not self.algo1.return_home
-
+    def handle_toggle_center_ai(self):
+        self.algo1.toggle_center_ai = not self.algo1.toggle_center_ai
 
 if __name__ == "__main__":
     app = SimulationWindow()

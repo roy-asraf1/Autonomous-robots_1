@@ -15,6 +15,7 @@ class PixelState(Enum):
 class AutoAlgo1:
     def __init__(self, real_map):
         self.toggle_ai = False
+        self.toggle_center_ai = False
         self.map_size = 3000
         self.map = [[PixelState.UNEXPLORED for _ in range(self.map_size)] for _ in range(self.map_size)]
         self.drone = Drone(real_map)
@@ -49,7 +50,6 @@ class AutoAlgo1:
         self.is_lidars_max = False
         self.save_point_after_seconds = 3
         self.max_distance_between_points = 100
-        self.return_home = False
         self.init_point = None
 
     def init_map(self):
@@ -65,7 +65,10 @@ class AutoAlgo1:
     def update(self, delta_time):
         self.update_visited()
         self.update_map_by_lidars()
-        self.ai(delta_time)
+        if self.toggle_ai:
+            self.ai(delta_time)
+        if self.toggle_center_ai:
+            self.center_ai(delta_time)
         self.drone.update(delta_time)  # Update the drone's position
         self.drone_path.append(self.drone.get_point_on_map())  # Store the current position
         if self.is_rotating:
@@ -109,9 +112,6 @@ class AutoAlgo1:
                 self.map[xi][yi] = state
 
     def ai(self, delta_time):
-        if not self.toggle_ai:
-            return
-
         if self.is_init:
             self.speed_up()
             drone_point = self.drone.get_optical_sensor_location()
@@ -121,17 +121,6 @@ class AutoAlgo1:
             self.is_init = False
 
         drone_point = self.drone.get_optical_sensor_location()
-
-        if self.return_home:
-            if Tools.get_distance_between_points(self.get_last_point(), drone_point) < self.max_distance_between_points:
-                if len(self.points) <= 1 and Tools.get_distance_between_points(self.get_last_point(), drone_point) < self.max_distance_between_points / 5:
-                    self.speed_down()
-                else:
-                    self.remove_last_point()
-        else:
-            if Tools.get_distance_between_points(self.get_last_point(), drone_point) >= self.max_distance_between_points:
-                self.points.append(drone_point)
-                # self.mGraph.add_vertex(drone_point)  # Assuming mGraph is defined somewhere
 
         if not self.is_risky:
             lidar = self.drone.lidars[0]
@@ -164,18 +153,7 @@ class AutoAlgo1:
                     last_point = self.get_avg_last_point()
                     dis_to_lidar1 = Tools.get_distance_between_points(last_point, l1)
                     dis_to_lidar2 = Tools.get_distance_between_points(last_point, l2)
-
-                    if self.return_home:
-                        if Tools.get_distance_between_points(self.get_last_point(), drone_point) < self.max_distance_between_points:
-                            self.remove_last_point()
-                    else:
-                        if Tools.get_distance_between_points(self.get_last_point(), drone_point) >= self.max_distance_between_points:
-                            self.points.append(drone_point)
-                            # self.mGraph.add_vertex(drone_point)  # Assuming mGraph is defined somewhere
-
                     spin_by = 90
-                    if self.return_home:
-                        spin_by *= -1
 
                     if dis_to_lidar1 < dis_to_lidar2:
                         spin_by *= -1
@@ -184,6 +162,23 @@ class AutoAlgo1:
                         spin_by *= -1
 
                 self.spin_by(spin_by, True, self.escape_risk)
+
+    def center_ai(self, delta_time):
+        # Center AI logic
+        if not self.is_risky:
+            lidar_left = self.drone.lidars[1]
+            lidar_right = self.drone.lidars[2]
+
+            if lidar_left.current_distance < self.max_risky_distance / 2 or lidar_right.current_distance < self.max_risky_distance / 2:
+                self.is_risky = True
+
+                if lidar_left.current_distance < lidar_right.current_distance:
+                    self.spin_by(-self.max_angle_risky, True, self.escape_risk)  # Spin right
+                else:
+                    self.spin_by(self.max_angle_risky, True, self.escape_risk)  # Spin left
+
+        else:
+            self.try_to_escape = True
 
     def escape_risk(self):
         self.try_to_escape = False
